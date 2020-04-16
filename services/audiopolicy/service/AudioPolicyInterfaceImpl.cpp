@@ -780,7 +780,7 @@ error::BinderResult<bool> AudioPolicyService::AudioPolicyClient::checkPermission
             permRes = audioserver_permissions() ? check_perm(CAPTURE_AUDIO_OUTPUT, attrSource.uid)
                                                 : captureAudioOutputAllowed(attrSource);
             PROPAGATE_FALSEY(permRes);
-        } else {
+        } else if (!isAudioServerOrMediaServerUid(attrSource.uid)) {
             return false;
         }
     }
@@ -813,7 +813,8 @@ error::BinderResult<bool> AudioPolicyService::AudioPolicyClient::checkPermission
             // FIXME: use the same permission as for remote submix for now.
             FALLTHROUGH_INTENDED;
         case MixType::CAPTURE:
-            permRes = audioserver_permissions() ? check_perm(CAPTURE_AUDIO_OUTPUT, attrSource.uid)
+            permRes = audioserver_permissions() ? (check_perm(CAPTURE_AUDIO_OUTPUT, attrSource.uid) ||
+                                                   isAudioServerOrMediaServerUid(attrSource.uid))
                                                 : captureAudioOutputAllowed(attrSource);
             break;
         case MixType::EXT_POLICY_REROUTE:
@@ -989,7 +990,8 @@ Status AudioPolicyService::startInput(int32_t portIdAidl)
             String16(msg.str().c_str()), client->attributes.source);
 
     // check calling permissions
-    if (permitted == PERMISSION_HARD_DENIED) {
+    if (!isAudioServerOrMediaServerUid(client->attributionSource.uid) &&
+        permitted == PERMISSION_HARD_DENIED) {
         ALOGE("%s permission denied: recording not allowed for attribution source %s",
                 __func__, client->attributionSource.toString().c_str());
         return binderStatusFromStatusT(PERMISSION_DENIED);
