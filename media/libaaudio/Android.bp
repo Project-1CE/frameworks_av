@@ -36,6 +36,8 @@ ndk_library {
     symbol_file: "src/libaaudio.map.txt",
     first_version: "26",
     unversioned_until: "current",
+    // APIs implemented in asm don't have debug info: http://b/190554910.
+    allow_untyped_symbols: true,
 }
 
 cc_library_headers {
